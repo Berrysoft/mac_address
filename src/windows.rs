@@ -1,6 +1,7 @@
 use crate::MacAddressError;
 use core::convert::TryInto;
-use std::{ffi::OsString, os::windows::ffi::OsStringExt, ptr, slice};
+use std::ptr;
+use widestring::U16CStr;
 use windows_sys::Win32::{
     NetworkManagement::IpHelper::{GetAdaptersAddresses, IP_ADAPTER_ADDRESSES_LH},
     Networking::WinSock::AF_UNSPEC,
@@ -28,9 +29,9 @@ pub fn get_mac(name: Option<&str>) -> Result<Option<[u8; 6]>, MacAddressError> {
         let bytes = unsafe { convert_mac_bytes(ptr) };
 
         if let Some(name) = name {
-            let adapter_name = unsafe { construct_string(ptr.read_unaligned().FriendlyName) };
+            let adapter_name = unsafe { U16CStr::from_ptr_str(ptr.read_unaligned().FriendlyName) };
 
-            if adapter_name == name {
+            if adapter_name.to_string_lossy() == name {
                 return Ok(Some(bytes));
             }
         } else if bytes.iter().any(|&x| x != 0) {
@@ -58,9 +59,9 @@ pub fn get_ifname(mac: &[u8; 6]) -> Result<Option<String>, MacAddressError> {
         let bytes = unsafe { convert_mac_bytes(ptr) };
 
         if &bytes == mac {
-            let adapter_name = unsafe { construct_string(ptr.read_unaligned().FriendlyName) };
+            let adapter_name = unsafe { U16CStr::from_ptr_str(ptr.read_unaligned().FriendlyName) };
             let adapter_name = adapter_name
-                .into_string()
+                .to_string()
                 .map_err(|_| MacAddressError::InternalError)?;
             return Ok(Some(adapter_name));
         }
@@ -114,21 +115,4 @@ pub(crate) fn get_adapters() -> Result<Vec<u8>, MacAddressError> {
     }
 
     Ok(adapters_list)
-}
-
-unsafe fn construct_string(ptr: *mut u16) -> OsString {
-    let slice = slice::from_raw_parts(ptr, get_null_position(ptr));
-    OsStringExt::from_wide(slice)
-}
-
-unsafe fn get_null_position(ptr: *mut u16) -> usize {
-    assert!(!ptr.is_null());
-
-    for i in 0.. {
-        if *ptr.offset(i) == 0 {
-            return i as usize;
-        }
-    }
-
-    unreachable!()
 }

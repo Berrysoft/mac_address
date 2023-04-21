@@ -24,6 +24,7 @@ windows-sys = { version = "0.48", features = [
     "Win32_NetworkManagement_Ndis",
     "Win32_Networking_WinSock",
 ] }
+widestring = "1"
 
 [dev-dependencies]
 serde_test = "1"
