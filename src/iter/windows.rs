@@ -1,19 +1,19 @@
 use crate::os;
 use crate::{MacAddress, MacAddressError};
-use winapi::um::iptypes::PIP_ADAPTER_ADDRESSES;
+use windows_sys::Win32::NetworkManagement::IpHelper::IP_ADAPTER_ADDRESSES_LH;
 
 /// An iterator over all available MAC addresses on the system.
 pub struct MacAddressIterator {
     // So we don't UAF during iteration.
     _buffer: Vec<u8>,
-    ptr: PIP_ADAPTER_ADDRESSES,
+    ptr: *mut IP_ADAPTER_ADDRESSES_LH,
 }
 
 impl MacAddressIterator {
     /// Creates a new `MacAddressIterator`.
     pub fn new() -> Result<MacAddressIterator, MacAddressError> {
         let mut adapters = os::get_adapters()?;
-        let ptr = adapters.as_mut_ptr() as PIP_ADAPTER_ADDRESSES;
+        let ptr = adapters.as_mut_ptr() as *mut IP_ADAPTER_ADDRESSES_LH;
 
         Ok(Self {
             _buffer: adapters,

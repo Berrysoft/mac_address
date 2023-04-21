@@ -1,7 +1,10 @@
 [package]
 name = "mac_address"
 version = "1.1.5"
-authors = ["rep-nop <repnop@outlook.com>"]
+authors = [
+    "rep-nop <repnop@outlook.com>",
+    "Berrysoft <Strawberry_Str@hotmail.com>",
+]
 edition = "2018"
 description = "Cross-platform retrieval of a network interface MAC address."
 repository = "https://github.com/rep-nop/mac_address"
@@ -10,14 +13,18 @@ license = "MIT OR Apache-2.0"
 keywords = ["mac", "address", "network", "interface"]
 
 [dependencies]
-serde = { version = "1.0.117", features = ["derive"], optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "freebsd", target_os = "openbsd"))'.dependencies]
-nix = "0.23.1"
+nix = "0.26"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["winerror", "ws2def", "iphlpapi"] }
+windows-sys = { version = "0.48", features = [
+    "Win32_NetworkManagement_IpHelper",
+    "Win32_NetworkManagement_Ndis",
+    "Win32_Networking_WinSock",
+] }
 
 [dev-dependencies]
-serde_test = "1.0.117"
-serde_json = "1.0.59"
+serde_test = "1"
+serde_json = "1"

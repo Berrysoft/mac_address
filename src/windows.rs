@@ -1,14 +1,12 @@
+use crate::MacAddressError;
 use core::convert::TryInto;
 use std::{ffi::OsString, os::windows::ffi::OsStringExt, ptr, slice};
-use winapi::shared::{ntdef::ULONG, winerror::ERROR_SUCCESS, ws2def::AF_UNSPEC};
-use winapi::um::{
-    iphlpapi::GetAdaptersAddresses,
-    iptypes::{IP_ADAPTER_ADDRESSES_LH, PIP_ADAPTER_ADDRESSES},
+use windows_sys::Win32::{
+    NetworkManagement::IpHelper::{GetAdaptersAddresses, IP_ADAPTER_ADDRESSES_LH},
+    Networking::WinSock::AF_UNSPEC,
 };
 
-use crate::MacAddressError;
-
-const GAA_FLAG_NONE: ULONG = 0x0000;
+//const GAA_FLAG_NONE: ULONG = 0x0000;
 
 /// Uses bindings to the `Iphlpapi.h` Windows header to fetch the interface devices
 /// list with [GetAdaptersAddresses][https://msdn.microsoft.com/en-us/library/windows/desktop/aa365915(v=vs.85).aspx]
@@ -19,7 +17,7 @@ const GAA_FLAG_NONE: ULONG = 0x0000;
 pub fn get_mac(name: Option<&str>) -> Result<Option<[u8; 6]>, MacAddressError> {
     let mut adapters = get_adapters()?;
     // Pointer to the current location in the linked list
-    let mut ptr = adapters.as_mut_ptr() as PIP_ADAPTER_ADDRESSES;
+    let mut ptr = adapters.as_mut_ptr() as *mut IP_ADAPTER_ADDRESSES_LH;
 
     loop {
         // Break if we've gone through all devices
@@ -49,7 +47,7 @@ pub fn get_mac(name: Option<&str>) -> Result<Option<[u8; 6]>, MacAddressError> {
 pub fn get_ifname(mac: &[u8; 6]) -> Result<Option<String>, MacAddressError> {
     let mut adapters = get_adapters()?;
     // Pointer to the current location in the linked list
-    let mut ptr = adapters.as_mut_ptr() as PIP_ADAPTER_ADDRESSES;
+    let mut ptr = adapters.as_mut_ptr() as *mut IP_ADAPTER_ADDRESSES_LH;
 
     loop {
         // Break if we've gone through all devices
@@ -88,7 +86,7 @@ pub(crate) fn get_adapters() -> Result<Vec<u8>, MacAddressError> {
     unsafe {
         GetAdaptersAddresses(
             AF_UNSPEC as u32,
-            GAA_FLAG_NONE,
+            0,
             ptr::null_mut(),
             ptr::null_mut(),
             &mut buf_len,
@@ -97,26 +95,21 @@ pub(crate) fn get_adapters() -> Result<Vec<u8>, MacAddressError> {
 
     // Allocate `buf_len` bytes, and create a raw pointer to it
     let mut adapters_list = vec![0u8; buf_len as usize];
-    let adapter_addresses: PIP_ADAPTER_ADDRESSES = adapters_list.as_mut_ptr() as *mut _;
+    let adapter_addresses: *mut IP_ADAPTER_ADDRESSES_LH = adapters_list.as_mut_ptr() as *mut _;
 
     // Get our list of adapters
     let result = unsafe {
         GetAdaptersAddresses(
-            // [IN] Family
             AF_UNSPEC as u32,
-            // [IN] Flags
-            GAA_FLAG_NONE,
-            // [IN] Reserved
+            0,
             ptr::null_mut(),
-            // [INOUT] AdapterAddresses
             adapter_addresses as *mut _,
-            // [INOUT] SizePointer
             &mut buf_len,
         )
     };
 
     // Make sure we were successful
-    if result != ERROR_SUCCESS {
+    if result != 0 {
         return Err(MacAddressError::InternalError);
     }
 
