@@ -1,6 +1,6 @@
 use crate::MacAddressError;
 use core::convert::TryInto;
-use std::ptr;
+use std::{ffi::CStr, ptr};
 use widestring::U16CStr;
 use windows_sys::Win32::{
     NetworkManagement::IpHelper::{GetAdaptersAddresses, IP_ADAPTER_ADDRESSES_LH},
@@ -35,6 +35,11 @@ pub fn get_mac(name: Option<&str>) -> Result<Option<[u8; 6]>, MacAddressError> {
 
             if adapter_name.to_string_lossy() == name {
                 return Ok(Some(bytes));
+            } else {
+                let adapter_name = unsafe { CStr::from_ptr(addr_lh.AdapterName as *const _) };
+                if adapter_name.to_str() == Ok(name) {
+                    return Ok(Some(bytes));
+                }
             }
         } else if bytes.iter().any(|&x| x != 0) {
             return Ok(Some(bytes));
