@@ -1,7 +1,5 @@
-#![allow(dead_code)]
-
 use crate::MacAddressError;
-use nix::{ifaddrs::*, sys::socket::SockAddr};
+use nix::ifaddrs::*;
 
 /// Uses the `getifaddrs` call to retrieve a list of network interfaces on the
 /// host device and returns the first MAC address listed that isn't
@@ -11,14 +9,14 @@ pub fn get_mac(name: Option<&str>) -> Result<Option<[u8; 6]>, MacAddressError> {
 
     for interface in ifiter {
         if let Some(address) = interface.address {
-            if let SockAddr::Link(link) = address {
+            if let Some(link) = address.as_link_addr() {
                 let bytes = link.addr();
 
                 if let Some(name) = name {
                     if interface.interface_name == name {
-                        return Ok(Some(bytes));
+                        return Ok(bytes);
                     }
-                } else if bytes.iter().any(|&x| x != 0) {
+                } else if let Some(bytes) = bytes {
                     return Ok(Some(bytes));
                 }
             }
@@ -33,8 +31,8 @@ pub fn get_ifname(mac: &[u8; 6]) -> Result<Option<String>, MacAddressError> {
 
     for interface in ifiter {
         if let Some(address) = interface.address {
-            if let SockAddr::Link(link) = address {
-                let bytes = link.addr();
+            if let Some(link) = address.as_link_addr() {
+                let bytes = link.addr().unwrap_or_default();
 
                 if &bytes == mac {
                     return Ok(Some(interface.interface_name));
