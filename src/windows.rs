@@ -26,10 +26,12 @@ pub fn get_mac(name: Option<&str>) -> Result<Option<[u8; 6]>, MacAddressError> {
             break;
         }
 
-        let bytes = unsafe { convert_mac_bytes(ptr) };
+        let addr_lh = unsafe { ptr.read_unaligned() };
+
+        let bytes = convert_mac_bytes(&addr_lh);
 
         if let Some(name) = name {
-            let adapter_name = unsafe { U16CStr::from_ptr_str(ptr.read_unaligned().FriendlyName) };
+            let adapter_name = unsafe { U16CStr::from_ptr_str(addr_lh.FriendlyName) };
 
             if adapter_name.to_string_lossy() == name {
                 return Ok(Some(bytes));
@@ -39,7 +41,7 @@ pub fn get_mac(name: Option<&str>) -> Result<Option<[u8; 6]>, MacAddressError> {
         }
 
         // Otherwise go to the next device
-        ptr = unsafe { ptr.read_unaligned().Next };
+        ptr = addr_lh.Next;
     }
 
     Ok(None)
@@ -56,10 +58,12 @@ pub fn get_ifname(mac: &[u8; 6]) -> Result<Option<String>, MacAddressError> {
             break;
         }
 
-        let bytes = unsafe { convert_mac_bytes(ptr) };
+        let addr_lh = unsafe { ptr.read_unaligned() };
+
+        let bytes = convert_mac_bytes(&addr_lh);
 
         if &bytes == mac {
-            let adapter_name = unsafe { U16CStr::from_ptr_str(ptr.read_unaligned().FriendlyName) };
+            let adapter_name = unsafe { U16CStr::from_ptr_str(addr_lh.FriendlyName) };
             let adapter_name = adapter_name
                 .to_string()
                 .map_err(|_| MacAddressError::InternalError)?;
@@ -67,17 +71,15 @@ pub fn get_ifname(mac: &[u8; 6]) -> Result<Option<String>, MacAddressError> {
         }
 
         // Otherwise go to the next device
-        ptr = unsafe { ptr.read_unaligned().Next };
+        ptr = addr_lh.Next;
     }
 
     Ok(None)
 }
 
 /// Copy over the 6 MAC address bytes to the buffer.
-pub(crate) unsafe fn convert_mac_bytes(ptr: *mut IP_ADAPTER_ADDRESSES_LH) -> [u8; 6] {
-    (ptr.read_unaligned().PhysicalAddress)[..6]
-        .try_into()
-        .unwrap()
+pub(crate) fn convert_mac_bytes(addr_lh: &IP_ADAPTER_ADDRESSES_LH) -> [u8; 6] {
+    addr_lh.PhysicalAddress[..6].try_into().unwrap()
 }
 
 pub(crate) fn get_adapters() -> Result<Vec<u8>, MacAddressError> {
