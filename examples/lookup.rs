@@ -1,4 +1,4 @@
-use mac_address::mac_address_by_name;
+use mac_address2::mac_address_by_name;
 
 fn main() {
     #[cfg(any(target_os = "linux", target_os = "macos"))]
