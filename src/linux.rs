@@ -1,6 +1,12 @@
 use crate::MacAddressError;
 use nix::ifaddrs::*;
 
+impl From<nix::Error> for MacAddressError {
+    fn from(e: nix::Error) -> MacAddressError {
+        MacAddressError::IoError(std::io::Error::from_raw_os_error(e as i32))
+    }
+}
+
 /// Uses the `getifaddrs` call to retrieve a list of network interfaces on the
 /// host device and returns the first MAC address listed that isn't
 /// local-loopback or if a name was specified, that name.

@@ -71,7 +71,7 @@ pub fn get_ifname(mac: &[u8; 6]) -> Result<Option<String>, MacAddressError> {
             let adapter_name = unsafe { U16CStr::from_ptr_str(addr_lh.FriendlyName) };
             let adapter_name = adapter_name
                 .to_string()
-                .map_err(|_| MacAddressError::InternalError)?;
+                .map_err(|_| MacAddressError::StringError)?;
             return Ok(Some(adapter_name));
         }
 
@@ -118,7 +118,9 @@ pub(crate) fn get_adapters() -> Result<Vec<u8>, MacAddressError> {
 
     // Make sure we were successful
     if result != 0 {
-        return Err(MacAddressError::InternalError);
+        return Err(MacAddressError::IoError(std::io::Error::from_raw_os_error(
+            result as _,
+        )));
     }
 
     Ok(adapters_list)

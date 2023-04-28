@@ -2,7 +2,7 @@
 //! network hardware. See [the Wikipedia
 //! entry](https://en.wikipedia.org/wiki/MAC_address) for more information.
 //!
-//! Supported platforms: Linux, Windows, MacOS, FreeBSD
+//! Supported platforms: Windows, Linux, MacOS, FreeBSD, OpenBSD, Android
 
 #![deny(missing_docs)]
 
@@ -26,54 +26,26 @@ pub use iter::MacAddressIterator;
 /// Possible errors when attempting to retrieve a MAC address.
 ///
 /// Eventually will expose more detailed error information.
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum MacAddressError {
-    /// Signifies an internal API error has occurred.
-    InternalError,
+    /// System error.
+    #[error("system error: {0}")]
+    IoError(#[from] std::io::Error),
+    /// String conversion error.
+    #[error("string conversion error")]
+    StringError,
 }
-
-#[cfg(any(
-    target_os = "linux",
-    target_os = "macos",
-    target_os = "freebsd",
-    target_os = "openbsd",
-    target_os = "android"
-))]
-impl From<nix::Error> for MacAddressError {
-    fn from(_: nix::Error) -> MacAddressError {
-        MacAddressError::InternalError
-    }
-}
-
-impl std::fmt::Display for MacAddressError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(match self {
-            MacAddressError::InternalError => "Internal API error",
-        })
-    }
-}
-
-impl std::error::Error for MacAddressError {}
 
 /// An error that may occur when parsing a MAC address string.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, thiserror::Error)]
 pub enum MacParseError {
     /// Parsing of the MAC address contained an invalid digit.
+    #[error("invalid digit")]
     InvalidDigit,
     /// The MAC address did not have the correct length.
+    #[error("invalid length")]
     InvalidLength,
 }
-
-impl std::fmt::Display for MacParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(match *self {
-            MacParseError::InvalidDigit => "invalid digit",
-            MacParseError::InvalidLength => "invalid length",
-        })
-    }
-}
-
-impl std::error::Error for MacParseError {}
 
 /// Contains the individual bytes of the MAC address.
 #[derive(Debug, Clone, Copy, PartialEq, Default, Eq, PartialOrd, Ord, Hash)]
@@ -116,7 +88,8 @@ pub fn get_mac_address() -> Result<Option<MacAddress>, MacAddressError> {
 
 /// Attempts to look up the MAC address of an interface via the specified name.
 /// **NOTE**: On Windows, this uses the `FriendlyName` field of the adapter, which
-/// is the same name shown in the "Network Connections" Control Panel screen.
+/// is the same name shown in the "Network Connections" Control Panel screen;
+/// and the `AdapterName` field as the fallback.
 pub fn mac_address_by_name(name: &str) -> Result<Option<MacAddress>, MacAddressError> {
     let bytes = os::get_mac(Some(name))?;
 
@@ -160,7 +133,7 @@ impl std::str::FromStr for MacAddress {
     }
 }
 
-impl std::convert::TryFrom<&'_ str> for MacAddress {
+impl TryFrom<&'_ str> for MacAddress {
     type Error = MacParseError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -168,7 +141,7 @@ impl std::convert::TryFrom<&'_ str> for MacAddress {
     }
 }
 
-impl std::convert::TryFrom<std::borrow::Cow<'_, str>> for MacAddress {
+impl TryFrom<std::borrow::Cow<'_, str>> for MacAddress {
     type Error = MacParseError;
 
     fn try_from(value: std::borrow::Cow<'_, str>) -> Result<Self, Self::Error> {
