@@ -1,6 +1,6 @@
 [package]
 name = "mac_address2"
-version = "2.0.0"
+version = "2.0.1"
 authors = [
     "rep-nop <repnop@outlook.com>",
     "Berrysoft <Strawberry_Str@hotmail.com>",
@@ -17,7 +17,7 @@ keywords = ["mac", "address", "network", "interface"]
 thiserror = "1"
 serde = { version = "1", features = ["derive"], optional = true }
 
-[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "freebsd", target_os = "openbsd", target_os = "android"))'.dependencies]
+[target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "ios", target_os = "freebsd", target_os = "openbsd", target_os = "android"))'.dependencies]
 nix = "0.26"
 
 [target.'cfg(windows)'.dependencies]

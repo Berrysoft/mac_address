@@ -1,13 +1,13 @@
 use mac_address2::mac_address_by_name;
 
 fn main() {
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "ios"))]
     let name = "eth0";
 
-    #[cfg(any(target_os = "freebsd"))]
+    #[cfg(target_os = "freebsd")]
     let name = "em0";
 
-    #[cfg(any(target_os = "openbsd"))]
+    #[cfg(target_os = "openbsd")]
     let name = "fxp0";
 
     #[cfg(target_os = "windows")]

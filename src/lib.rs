@@ -13,6 +13,7 @@ mod os;
 #[cfg(any(
     target_os = "linux",
     target_os = "macos",
+    target_os = "ios",
     target_os = "freebsd",
     target_os = "openbsd",
     target_os = "android"
