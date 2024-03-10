@@ -23,7 +23,9 @@ pub fn get_mac(name: Option<&str>) -> Result<Option<[u8; 6]>, MacAddressError> {
                         return Ok(bytes);
                     }
                 } else if let Some(bytes) = bytes {
-                    return Ok(Some(bytes));
+                    if bytes.iter().any(|&x| x != 0) {
+                        return Ok(Some(bytes));
+                    }
                 }
             }
         }

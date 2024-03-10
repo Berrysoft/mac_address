@@ -1,6 +1,6 @@
 [package]
 name = "mac_address2"
-version = "2.0.1"
+version = "2.0.2"
 authors = [
     "rep-nop <repnop@outlook.com>",
     "Berrysoft <Strawberry_Str@hotmail.com>",
@@ -18,10 +18,10 @@ thiserror = "1"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "ios", target_os = "freebsd", target_os = "openbsd", target_os = "android"))'.dependencies]
-nix = "0.26"
+nix = { version = "0.28", features = ["net"] }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.48", features = [
+windows-sys = { version = "0.52", features = [
     "Win32_NetworkManagement_IpHelper",
     "Win32_NetworkManagement_Ndis",
     "Win32_Networking_WinSock",

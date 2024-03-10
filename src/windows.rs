@@ -1,5 +1,4 @@
 use crate::MacAddressError;
-use core::convert::TryInto;
 use std::{ffi::CStr, ptr};
 use widestring::U16CStr;
 use windows_sys::Win32::{
